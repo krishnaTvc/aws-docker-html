@@ -96,4 +96,8 @@ jobs:
         run: |
           sleep 3
           docker ps
+<<<<<<< HEAD
           curl --fail http://localhost
+=======
+          curl --fail http://localhost
+>>>>>>> 2872cfc5f4a82a79f7f10cdb1aaebec5dc0ddac5
