@@ -25,10 +25,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Display version
+      - name: Display build information
         run: |
-          echo "Application Version: $APP_VERSION"
+          echo "Application: $APP_NAME"
+          echo "Version: $APP_VERSION"
           echo "Commit: $GITHUB_SHA"
+          echo "Runner: $RUNNER_NAME"
+          echo "Host: $(hostname)"
 
       - name: Build Docker image
         run: |
@@ -38,7 +41,7 @@ jobs:
 
       - name: Verify Docker image
         run: |
-          docker images
+          docker images $APP_NAME
 
       - name: Package Docker image
         run: |
@@ -57,6 +60,10 @@ jobs:
           path: ${{ env.APP_NAME }}-${{ env.APP_VERSION }}.tar
           retention-days: 30
 
+      - name: Remove local tar file
+        run: |
+          rm -f $APP_NAME-$APP_VERSION.tar
+
 
   deploy:
     name: Deploy Artifact to EC2
@@ -71,16 +78,17 @@ jobs:
         with:
           name: ${{ env.APP_NAME }}-${{ env.APP_VERSION }}
 
-      - name: Check downloaded artifact
+      - name: Verify downloaded artifact
         run: |
-          ls -lh
+          echo "Deploying version: $APP_VERSION"
+          ls -lh $APP_NAME-$APP_VERSION.tar
 
       - name: Load Docker image
         run: |
           docker load \
             -i $APP_NAME-$APP_VERSION.tar
 
-      - name: Remove existing container
+      - name: Remove existing application container
         run: |
           docker rm -f $APP_NAME || true
 
@@ -96,8 +104,14 @@ jobs:
         run: |
           sleep 3
           docker ps
-<<<<<<< HEAD
           curl --fail http://localhost
-=======
-          curl --fail http://localhost
->>>>>>> 2872cfc5f4a82a79f7f10cdb1aaebec5dc0ddac5
+
+      - name: Display deployed version
+        run: |
+          echo "Successfully deployed:"
+          echo "$APP_NAME:$APP_VERSION"
+
+      - name: Cleanup downloaded artifact
+        if: always()
+        run: |
+          rm -f $APP_NAME-$APP_VERSION.tar
