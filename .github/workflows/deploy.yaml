@@ -1,0 +1,59 @@
+name: Deploy HTML Application
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Build and Deploy
+    runs-on: self-hosted
+
+    steps:
+
+      - name: Checkout Repository
+        uses: actions/checkout@v6
+
+      - name: Show Environment
+        run: |
+          echo "Runner hostname:"
+          hostname
+
+          echo "Current user:"
+          whoami
+
+          echo "Docker version:"
+          docker --version
+
+      - name: Build Docker Image
+        run: |
+          docker build \
+            -t aws-html-app:${{ github.sha }} \
+            -t aws-html-app:latest \
+            .
+
+      - name: Stop Existing Container
+        run: |
+          docker stop aws-html-container || true
+          docker rm aws-html-container || true
+
+      - name: Start New Container
+        run: |
+          docker run -d \
+            --name aws-html-container \
+            --restart unless-stopped \
+            -p 80:80 \
+            aws-html-app:${{ github.sha }}
+
+      - name: Verify Deployment
+        run: |
+          sleep 3
+          curl --fail http://localhost
+
+      - name: Display Running Containers
+        run: |
+          docker ps
